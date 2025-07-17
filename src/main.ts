@@ -1,18 +1,26 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common'; 
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+ 
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log', 'verbose', 'debug'], 
+  });
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port');
 
   app.use(cookieParser());
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
 
   const config = new DocumentBuilder()
     .setTitle('NestJS Autentifikatsiya API')
@@ -35,11 +43,13 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(process.env.PORT||3000,()=>{
-    console.log("server is running at "+process.env.PORT);
-    
+  const appLogger = new Logger('NestApplication'); 
+
+  await app.listen(process.env.PORT || 3000, () => {
+    appLogger.log(`Server is running at ${process.env.PORT || 3000}`); 
   });
-  console.log(`Application is running on: ${await app.getUrl()}`);
-  console.log(`Swagger documentation available at: ${await app.getUrl()}/api`);
+
+  appLogger.log(`Application is running on: ${await app.getUrl()}`);
+  appLogger.log(`Swagger documentation available at: ${await app.getUrl()}/api`);
 }
 bootstrap();

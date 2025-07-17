@@ -4,6 +4,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { MailModule } from './mail/mail.module';
+import { CategoryModule } from './category/category.module';
+import { ProductModule } from './product/product.module';
+import { SlidersModule } from './sliders/sliders.module';
+import { LikeModule } from './like/like.module';
+import { CommentModule } from './comment/comment.module';
+import { OrderModule } from './order/order.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -22,6 +28,12 @@ import configuration from './config/configuration';
     AuthModule,
     UserModule,
     MailModule,
+    CategoryModule,
+    ProductModule,
+    SlidersModule,
+    LikeModule,
+    CommentModule,
+    OrderModule,
   ],
   controllers: [],
   providers: [],
