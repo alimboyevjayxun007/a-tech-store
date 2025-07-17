@@ -15,10 +15,10 @@ export class ProductVariant {
   @Prop({ required: true })
   color: string; 
 
-  @Prop({ required: false })
+  @Prop()
   size?: string; 
   
-  @Prop({ required: false })
+  @Prop()
   material?: string; 
 
   @Prop({ required: true, min: 0 })
@@ -26,6 +26,9 @@ export class ProductVariant {
 
   @Prop({ required: true, default: 0 })
   priceAdjustment: number; 
+
+  @Prop({ required: true, default: 0, min: 0 })
+  soldQuantity: number; 
 }
 export const ProductVariantSchema = SchemaFactory.createForClass(ProductVariant);
 
@@ -59,7 +62,7 @@ export class Product extends Document {
   @Prop({ type: [ProductVariantSchema], default: [] }) 
   variants: ProductVariant[];
 
-
+  @Prop({ type: Map, of: String }) 
   technical_specs: Map<string, string>; 
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -71,6 +74,10 @@ export type ProductDocument = Product & Document;
 
 ProductSchema.virtual('totalQuantity').get(function (this: ProductDocument): number {
   return this.variants.reduce((total, variant) => total + variant.quantity, 0);
+});
+
+ProductSchema.virtual('totalSoldQuantity').get(function (this: ProductDocument): number {
+  return this.variants.reduce((total, variant) => total + variant.soldQuantity, 0);
 });
 
 ProductSchema.virtual('likesCount', {
