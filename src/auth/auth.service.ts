@@ -81,11 +81,9 @@ export class AuthService {
       throw new BadRequestException('Bu foydalanuvchi allaqachon tasdiqlangan.');
     }
 
-    // --- Xato bo'lgan qism ---
     if (!user.otp || user.otp.toUpperCase() !== verifyOtpDto.otp.toUpperCase() || !user.otpExpires || user.otpExpires < new Date()) {
       throw new BadRequestException('Yaroqsiz yoki eskirgan OTP.');
     }
-    // --- Tugadi ---
 
     await this.userService.update(user._id.toString(), {
       isVerified: true,

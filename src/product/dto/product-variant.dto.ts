@@ -1,4 +1,3 @@
-// src/product/dto/product-variant.dto.ts
 import { IsString, IsNotEmpty, IsNumber, Min, IsOptional } from 'class-validator';
 
 export class ProductVariantDto {
@@ -24,4 +23,9 @@ export class ProductVariantDto {
 
   @IsNumber()
   priceAdjustment: number;
+
+  @IsNumber()
+  @Min(0, { message: 'Sotilgan miqdor manfiy bo\'lmasligi kerak.' })
+  @IsOptional() 
+  soldQuantity?: number;
 }

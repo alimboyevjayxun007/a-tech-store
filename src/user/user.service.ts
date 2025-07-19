@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common'; // NotFoundException ni qo'shing
+// src/user/user.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
@@ -13,7 +14,6 @@ export class UserService {
     return createdUser.save();
   }
 
-  // Barcha foydalanuvchilarni topish metodi
   async findAll(): Promise<UserDocument[]> {
     return this.userModel.find().exec();
   }
@@ -23,9 +23,8 @@ export class UserService {
   }
 
   async findById(id: string): Promise<UserDocument | null> {
-    // ID bo'yicha foydalanuvchini topish metodi
-    // Agar foydalanuvchi topilmasa, NotFoundException tashlash
     const user = await this.userModel.findById(id).select('+password +refreshToken').exec();
+
     if (!user) {
       throw new NotFoundException(`Foydalanuvchi topilmadi: ID ${id}`);
     }
@@ -36,7 +35,6 @@ export class UserService {
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
-    // Updated user tekshiriladi, agar topilmasa, NotFoundException tashlanadi
     const updatedUser = await this.userModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
     if (!updatedUser) {
       throw new NotFoundException(`Foydalanuvchi topilmadi: ID ${id}`);
@@ -51,13 +49,11 @@ export class UserService {
       { new: true, select: false }
     ).exec();
     if (!user) {
-      // Bu holatda odatda `null` qaytariladi, lekin agar muhim bo'lsa xato ham tashlash mumkin
       throw new NotFoundException(`Foydalanuvchi topilmadi: ID ${userId}`);
     }
     return user;
   }
 
-  // Foydalanuvchini o'chirish metodi
   async remove(id: string): Promise<UserDocument | null> {
     const deletedUser = await this.userModel.findByIdAndDelete(id).exec();
     if (!deletedUser) {
