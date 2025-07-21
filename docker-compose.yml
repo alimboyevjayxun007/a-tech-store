@@ -2,24 +2,9 @@ version: '3.8'
 
 services:
   nestjs-app:
-    build: .
+    image: ${{ secrets.DOCKER_HUB_USERNAME }}/nestjs-app:latest
     ports:
       - "4001:4001"
     env_file:
-      - .env
-    depends_on:
-      - mongo
+      - .env 
     restart: unless-stopped
-
-  mongo:
-    image: mongo:6.0
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - mongo_data:/data/db
-
-volumes:
-  mongo_data:
