@@ -36,7 +36,7 @@ async function bootstrap() {
     )
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document); // Swagger UI bu yerda "/api" yo'lida o'rnatilgan
+  SwaggerModule.setup('api', app, document); 
 
   app.enableCors({
     origin: true,

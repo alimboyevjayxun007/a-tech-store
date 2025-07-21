@@ -12,8 +12,8 @@ export class ProductVariant {
   @Prop({ required: true })
   name: string; 
   
-  @Prop({ required: true })
-  color: string; 
+  @Prop() 
+  color?: string; 
 
   @Prop()
   size?: string; 
@@ -50,7 +50,7 @@ export class Product extends Document {
   @Prop({ required: true })
   basePrice: number; 
 
-  @Prop()
+  @Prop() 
   description?: string; 
 
   @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
@@ -62,11 +62,23 @@ export class Product extends Document {
   @Prop({ type: [ProductVariantSchema], default: [] }) 
   variants: ProductVariant[];
 
-  @Prop({ type: Map, of: String }) 
+  @Prop({ type: Map, of: String, default: {} }) 
   technical_specs: Map<string, string>; 
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   created_by: Types.ObjectId;
+
+  @Prop({ default: false })
+  isNewArrival: boolean; 
+
+  @Prop({ default: false })
+  isBestSeller: boolean; 
+
+  @Prop({ default: false })
+  isFeatured: boolean; 
+
+  @Prop({ default: 0, min: 0, max: 5 })
+  averageRating: number; 
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

@@ -33,17 +33,15 @@ export class ProductService {
       throw new NotFoundException(`Category with ID ${createProductDto.category} not found.`);
     }
 
-
     const user: UserDocument | null = await this.userService.findById(userId);
     if (!user) {
       this.logger.error(`User with ID ${userId} not found, but trying to create product.`);
- 
       throw new BadRequestException('Creator user not found or invalid ID.');
     }
 
     const variantsWithInitialSoldQuantity = createProductDto.variants.map((variant) => ({
       ...variant,
-      soldQuantity: 0,
+      soldQuantity: variant.soldQuantity || 0,
     }));
 
     const createdProduct = new this.productModel({
@@ -51,6 +49,7 @@ export class ProductService {
       category: new Types.ObjectId(createProductDto.category),
       created_by: new Types.ObjectId(userId),
       variants: variantsWithInitialSoldQuantity,
+      technical_specs: createProductDto.technical_specs || {}, 
     });
 
     try {
@@ -93,6 +92,8 @@ export class ProductService {
         query.basePrice.$lte = maxPrice;
       }
     }
+
+    query.isActive = true;
 
     const products = await this.productModel
       .find(query)
@@ -155,7 +156,7 @@ export class ProductService {
                 updatedVariants[existingVariantIndex] = {
                     ...updatedVariants[existingVariantIndex],
                     ...incomingVariant,
-                    soldQuantity: updatedVariants[existingVariantIndex].soldQuantity
+                    soldQuantity: updatedVariants[existingVariantIndex].soldQuantity || 0 
                 };
             } else {
                 updatedVariants.push({ ...incomingVariant, soldQuantity: incomingVariant.soldQuantity || 0 });
@@ -226,7 +227,8 @@ export class ProductService {
     }
 
     variant.quantity += quantityChange;
-    variant.soldQuantity -= quantityChange;
+   
+    variant.soldQuantity -= quantityChange; 
 
     try {
       await product.save();
@@ -235,5 +237,41 @@ export class ProductService {
       this.logger.error(`Error updating stock for product ID: ${productId}, variant: ${variantName}: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  async getNewArrivals(limit = 10): Promise<ProductDocument[]> {
+    this.logger.log(`Fetching ${limit} new arrival products.`);
+    return this.productModel.find({ isActive: true, isNewArrival: true })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate('category')
+      .populate('created_by')
+      .populate('likesCount')
+      .populate('commentsCount')
+      .exec();
+  }
+
+  async getBestSellers(limit = 10): Promise<ProductDocument[]> {
+    this.logger.log(`Fetching ${limit} best seller products.`);
+    
+    return this.productModel.find({ isActive: true, isBestSeller: true })
+      .sort({ soldCount: -1 }) 
+      .limit(limit)
+      .populate('category')
+      .populate('created_by')
+      .populate('likesCount')
+      .populate('commentsCount')
+      .exec();
+  }
+
+  async getFeaturedProducts(limit = 10): Promise<ProductDocument[]> {
+    this.logger.log(`Fetching ${limit} featured products.`);
+    return this.productModel.find({ isActive: true, isFeatured: true })
+      .limit(limit)
+      .populate('category')
+      .populate('created_by')
+      .populate('likesCount')
+      .populate('commentsCount')
+      .exec();
   }
 }
