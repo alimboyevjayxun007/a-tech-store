@@ -1,18 +1,10 @@
 version: '3.8'
 
 services:
-  nestjs-app:
-    image: ${{ secrets.DOCKER_HUB_USERNAME }}/nestjs-app:latest
+  app:
+    image: jayxun2604/nestjs-app:latest
+    env_file:
+      - .env
+    restart: always
     ports:
-      - "4001:4001"
-    environment:
-      - PORT=4001
-      - MONGO_URI=${{ secrets.MONGO_URI }}
-      - JWT_SECRET=${{ secrets.JWT_SECRET }}
-      - JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
-      - MAIL_HOST=${{ secrets.MAIL_HOST }}
-      - MAIL_PORT=${{ secrets.MAIL_PORT }}
-      - MAIL_USER=${{ secrets.MAIL_USER }}
-      - MAIL_PASS=${{ secrets.MAIL_PASS }}
-      - MAIL_FROM=${{ secrets.MAIL_FROM }}
-    restart: unless-stopped
+      - "${PORT:-3000}:3000"

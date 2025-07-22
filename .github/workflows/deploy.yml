@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build NestJS application
+      - name: Build NestJS app
         run: npm run build
 
       - name: Login to Docker Hub
@@ -43,28 +43,44 @@ jobs:
           push: true
           tags: ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
 
-      - name: Deploy to server
+      - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
+
+            echo "📁 Loyihani joylashtirish papkasiga kirish: ${{ secrets.APP_DIR }}"
+            mkdir -p ${{ secrets.APP_DIR }}
             cd ${{ secrets.APP_DIR }}
 
-            
+            echo "📥 GitHub repodan kodni olib kelish..."
             if [ ! -d ".git" ]; then
-              echo "Repositoryni klonlash..."
-              git clone https://github.com/${{ github.repository }}.git .
+              git clone https://github.com/${{ github.repository }} .
             else
-              echo "Eng so'nggi o'zgarishlarni tortish..."
               git pull origin main
             fi
 
-            echo "Docker Hubdan eng so'nggi image'ni tortish..."
+            echo "📝 .env faylni yaratish..."
+            cat > .env <<EOL
+            PORT=${{ secrets.PORT }}
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+            MAIL_HOST=${{ secrets.MAIL_HOST }}
+            MAIL_PORT=${{ secrets.MAIL_PORT }}
+            MAIL_USER=${{ secrets.MAIL_USER }}
+            MAIL_PASS=${{ secrets.MAIL_PASS }}
+            MAIL_FROM=${{ secrets.MAIL_FROM }}
+            EOL
+
+            echo "📦 Docker image'ni tortish..."
             docker pull ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
 
-            echo "Docker Compose servislarini ishga tushirish..."
-            docker-compose -f docker-compose.yml up -d --force-recreate --remove-orphans
+            echo "🚀 Docker Compose orqali servislarni ishga tushirish..."
+            docker-compose down --remove-orphans
+            docker-compose up -d --build
 
-            echo "Joylashtirish yakunlandi!"
+            echo "✅ Joylashtirish yakunlandi!"
