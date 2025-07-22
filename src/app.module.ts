@@ -10,6 +10,7 @@ import { LikeModule } from './like/like.module';
 import { CommentModule } from './comment/comment.module';
 import { OrderModule } from './order/order.module';
 import { SliderModule } from './slider/slider.module';
+import { UploadModule } from './upload/upload.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -34,6 +35,7 @@ import configuration from './config/configuration';
     CommentModule,
     OrderModule,
     SliderModule,
+    UploadModule,
   ],
   controllers: [],
   providers: [],
