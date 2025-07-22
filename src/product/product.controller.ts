@@ -1,24 +1,30 @@
+// src/product/product.controller.ts
 import {
   Controller,
-  Post,
-  UseInterceptors,
-  UploadedFile,
-  Res,
   Get,
+  Post,
+  Body,
+  Patch,
   Param,
-  UseGuards,
+  Delete,
   HttpStatus,
+  HttpCode,
+  UseGuards,
+  Req,
+  Query,
+  DefaultValuePipe, 
+  ParseIntPipe,     
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { join } from 'path';
-import { createReadStream } from 'fs';
+import { ProductService } from './product.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { Product } from './schemas/product.schema';
 import {
   ApiTags,
   ApiResponse,
   ApiOperation,
   ApiBearerAuth,
-  ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
@@ -26,70 +32,106 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role-enum';
 
-@ApiTags('File Upload')
-@Controller('upload')
-export class UploadController {
-  private readonly UPLOAD_DIR = './uploads';
+@ApiTags('Products')
+@Controller('product')
+export class ProductController {
+  constructor(private readonly productService: ProductService) {}
 
-  @Post('image')
+  @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin, Role.SuperAdmin)
-  @ApiOperation({
-    summary: 'Upload an image (for admins/superadmins only)',
-  })
-  @ApiConsumes('multipart/form-data')
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Image successfully uploaded.',
-    schema: {
-      type: 'object',
-      properties: {
-        filename: { type: 'string', example: 'randomstring.jpg' },
-        originalname: { type: 'string', example: 'my-image.jpg' },
-        path: { type: 'string', example: './uploads/randomstring.jpg' },
-      },
-    },
-  })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid file format or size.' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden: Insufficient role.' })
+  @ApiOperation({ summary: 'Yangi mahsulot yaratish (faqat adminlar/superadminlar uchun)' })
+  @ApiResponse({ status: 201, description: 'Mahsulot muvaffaqiyatli yaratildi.', type: Product })
+  @ApiResponse({ status: 400, description: 'Yaroqsiz so\'rov ma\'lumotlari yoki kategoriya/foydalanuvchi topilmadi.' })
+  @ApiResponse({ status: 401, description: 'Ruxsat berilmagan.' })
+  @ApiResponse({ status: 403, description: 'Taqiqlangan: Rol yetarli emas.' })
   @ApiBearerAuth('accessToken')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const randomName = Array(32)
-            .fill(null)
-            .map(() => Math.round(Math.random() * 16).toString(16))
-            .join('');
-          const fileExtension = file.originalname.split('.').pop();
-          cb(null, `${randomName}.${fileExtension}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(new Error('Only image files are allowed!'), false);
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 5 * 1024 * 1024 },
-    }),
-  )
-  uploadImage(@UploadedFile() file: Express.Multer.File) {
-    return {
-      filename: file.filename,
-      originalname: file.originalname,
-      path: `${this.UPLOAD_DIR}/${file.filename}`,
-    };
+  async create(@Body() createProductDto: CreateProductDto, @Req() req): Promise<Product> {
+    const userId = req.user._id; 
+    return this.productService.create(createProductDto, userId);
   }
 
-  @Get('image/:imagename')
-  @ApiOperation({ summary: 'Retrieve an uploaded image (public access)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Image successfully retrieved.' })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Image not found.' })
-  findImage(@Param('imagename') imagename, @Res() res) {
-    const imagePath = join(process.cwd(), this.UPLOAD_DIR, imagename);
-    createReadStream(imagePath).pipe(res);
+  @Get()
+  @ApiOperation({ summary: 'Barcha mahsulotlarni ixtiyoriy filterlar va qidiruv bilan olish' })
+  @ApiResponse({ status: 200, description: 'Barcha mahsulotlar ro\'yxati.', type: [Product] })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Mahsulot nomi, kompaniyasi yoki modeli bo\'yicha qidiruv' })
+  @ApiQuery({ name: 'categoryId', required: false, type: String, description: 'Kategoriya IDsi bo\'yicha filter' })
+  @ApiQuery({ name: 'minPrice', required: false, type: Number, description: 'Minimal asosiy narx bo\'yicha filter' })
+  @ApiQuery({ name: 'maxPrice', required: false, type: Number, description: 'Maksimal asosiy narx bo\'yicha filter' })
+  async findAll(
+    @Query('search') search?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('minPrice') minPrice?: number,
+    @Query('maxPrice') maxPrice?: number,
+  ): Promise<Product[]> {
+    return this.productService.findAll(search, categoryId, minPrice, maxPrice);
+  }
+
+  @Get('new-arrivals')
+  @ApiOperation({ summary: 'Yangi kelgan mahsulotlarni olish' })
+  @ApiResponse({ status: 200, description: 'Yangi kelgan mahsulotlar ro\'yxati.', type: [Product] })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Qaytariladigan mahsulotlar soni', example: 10 })
+  async getNewArrivals(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ): Promise<Product[]> {
+    return this.productService.getNewArrivals(limit);
+  }
+
+  @Get('best-sellers')
+  @ApiOperation({ summary: 'Eng ko\'p sotilgan mahsulotlarni olish' })
+  @ApiResponse({ status: 200, description: 'Eng ko\'p sotilgan mahsulotlar ro\'yxati.', type: [Product] })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Qaytariladigan mahsulotlar soni', example: 10 })
+  async getBestSellers(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ): Promise<Product[]> {
+    return this.productService.getBestSellers(limit);
+  }
+
+  @Get('featured')
+  @ApiOperation({ summary: 'Tanlangan (Featured) mahsulotlarni olish' })
+  @ApiResponse({ status: 200, description: 'Tanlangan mahsulotlar ro\'yxati.', type: [Product] })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Qaytariladigan mahsulotlar soni', example: 10 })
+  async getFeaturedProducts(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ): Promise<Product[]> {
+    return this.productService.getFeaturedProducts(limit);
+  }
+
+
+  @Get(':id')
+  @ApiOperation({ summary: 'ID bo\'yicha mahsulotni olish' })
+  @ApiResponse({ status: 200, description: 'Mahsulot tafsilotlari.', type: Product })
+  @ApiResponse({ status: 404, description: 'Mahsulot topilmadi.' })
+  async findOne(@Param('id') id: string): Promise<Product> {
+    return this.productService.findOne(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin, Role.SuperAdmin)
+  @ApiOperation({ summary: 'ID bo\'yicha mahsulotni yangilash (faqat adminlar/superadminlar uchun)' })
+  @ApiResponse({ status: 200, description: 'Mahsulot muvaffaqiyatli yangilandi.', type: Product })
+  @ApiResponse({ status: 400, description: 'Yaroqsiz so\'rov ma\'lumotlari yoki ID formati.' })
+  @ApiResponse({ status: 401, description: 'Ruxsat berilmagan.' })
+  @ApiResponse({ status: 403, description: 'Taqiqlangan: Rol yetarli emas.' })
+  @ApiResponse({ status: 404, description: 'Mahsulot yoki kategoriya topilmadi.' })
+  @ApiBearerAuth('accessToken')
+  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto): Promise<Product> {
+    return this.productService.update(id, updateProductDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin, Role.SuperAdmin)
+  @ApiOperation({ summary: 'ID bo\'yicha mahsulotni o\'chirish (faqat adminlar/superadminlar uchun)' })
+  @ApiResponse({ status: 204, description: 'Mahsulot muvaffaqiyatli o\'chirildi.' })
+  @ApiResponse({ status: 400, description: 'Yaroqsiz ID formati.' })
+  @ApiResponse({ status: 401, description: 'Ruxsat berilmagan.' })
+  @ApiResponse({ status: 403, description: 'Taqiqlangan: Rol yetarli emas.' })
+  @ApiResponse({ status: 404, description: 'Mahsulot topilmadi.' })
+  @ApiBearerAuth('accessToken')
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.productService.remove(id);
   }
 }
