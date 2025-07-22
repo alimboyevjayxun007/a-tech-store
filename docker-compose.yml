@@ -3,8 +3,8 @@ version: '3.8'
 services:
   app:
     image: jayxun2604/nestjs-app:latest
+    restart: always
     env_file:
       - .env
-    restart: always
     ports:
       - "${PORT:-3000}:3000"

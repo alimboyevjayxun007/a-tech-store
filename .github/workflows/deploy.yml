@@ -52,11 +52,11 @@ jobs:
           script: |
             set -e
 
-            echo "📁 Loyihani joylashtirish papkasiga kirish: ${{ secrets.APP_DIR }}"
+            echo "📁 Loyihani papkaga tayyorlash: ${{ secrets.APP_DIR }}"
             mkdir -p ${{ secrets.APP_DIR }}
             cd ${{ secrets.APP_DIR }}
 
-            echo "📥 GitHub repodan kodni olib kelish..."
+            echo "📥 Kodni yangilash..."
             if [ ! -d ".git" ]; then
               git clone https://github.com/${{ github.repository }} .
             else
@@ -64,7 +64,7 @@ jobs:
             fi
 
             echo "📝 .env faylni yaratish..."
-            cat > .env <<EOL
+            cat > .env <<'EOF'
             PORT=${{ secrets.PORT }}
             MONGO_URI=${{ secrets.MONGO_URI }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
@@ -74,13 +74,13 @@ jobs:
             MAIL_USER=${{ secrets.MAIL_USER }}
             MAIL_PASS=${{ secrets.MAIL_PASS }}
             MAIL_FROM=${{ secrets.MAIL_FROM }}
-            EOL
+            EOF
 
-            echo "📦 Docker image'ni tortish..."
+            echo "📦 Docker image'ni yangilash..."
             docker pull ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
 
-            echo "🚀 Docker Compose orqali servislarni ishga tushirish..."
+            echo "🚀 Docker Compose bilan ishga tushirish..."
             docker-compose down --remove-orphans
             docker-compose up -d --build
 
-            echo "✅ Joylashtirish yakunlandi!"
+            echo "✅ Deploy tugadi!"
