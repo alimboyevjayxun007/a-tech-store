@@ -45,9 +45,9 @@ async function bootstrap() {
 
   const appLogger = new Logger('NestApplication'); 
 
-  await app.listen(process.env.PORT || 3000, () => {
-    appLogger.log(`Server is running at ${process.env.PORT || 3000}`); 
-  });
+  await app.listen(process.env.PORT || 3000, '0.0.0.0', () => { 
+  appLogger.log(`Server is running at ${process.env.PORT || 3000}`);
+});
 
   appLogger.log(`Application is running on: ${await app.getUrl()}`);
   appLogger.log(`Swagger documentation available at: ${await app.getUrl()}/api`);
