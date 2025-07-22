@@ -1,14 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
-import { ValidationPipe, Logger } from '@nestjs/common'; 
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
- 
+
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'verbose', 'debug'], 
+    logger: ['error', 'warn', 'log', 'verbose', 'debug'],
   });
 
   const configService = app.get(ConfigService);
@@ -36,21 +36,22 @@ async function bootstrap() {
     )
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document); 
+  SwaggerModule.setup('api', app, document);
 
   app.enableCors({
     origin: true,
     credentials: true,
   });
 
-  const appLogger = new Logger('NestApplication'); 
+  const appLogger = new Logger('NestApplication');
 
-   await app.listen(process.env.PORT || 3000, '0.0.0.0', () => { // <--- '0.0.0.0' bu yerda bo'lishi shart
-        appLogger.log(`Server is running at ${process.env.PORT || 3000}`);
-    });
+  await app.listen(process.env.PORT || 3000, '0.0.0.0', () => { // <--- Bu yerda process.env.PORT yoki 3000
+    appLogger.log(`Server is running at ${process.env.PORT || 3000}`);
+  });
 
-    appLogger.log(`Application is running on: http://0.0.0.0:${process.env.PORT || 3000}`); // <--- Bu qatorni ham o'zgartiring
-    appLogger.log(`Swagger documentation available at: http://0.0.0.0:${process.env.PORT || 3000}/api`); // <--- Bu qatorni ham o'zgartiring
+  // Keyingi log qatorlari ham to'g'ri bo'lishi uchun:
+  appLogger.log(`Application is running on: http://0.0.0.0:${process.env.PORT || 3000}`);
+  appLogger.log(`Swagger documentation available at: http://0.0.0.0:${process.env.PORT || 3000}/api`);
 
 }
 bootstrap();
