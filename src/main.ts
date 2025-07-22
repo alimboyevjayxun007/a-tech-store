@@ -44,9 +44,10 @@ async function bootstrap() {
   });
 
   const appLogger = new Logger('NestApplication');
+  const NEST_PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  await app.listen(process.env.PORT || 3000, '0.0.0.0', () => { // <--- Bu yerda process.env.PORT yoki 3000
-    appLogger.log(`Server is running at ${process.env.PORT || 3000}`);
+  await app.listen(process.env.PORT || 3000, '0.0.0.0', () => { 
+    appLogger.log(`Server is running at ${NEST_PORT || 3000}`);
   });
 
   // Keyingi log qatorlari ham to'g'ri bo'lishi uchun:
